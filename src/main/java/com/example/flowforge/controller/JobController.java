@@ -1,4 +1,5 @@
-package com.example.flowforge.messaging;
+package com.example.flowforge.controller;
+import com.example.flowforge.messaging.JobSender;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 
@@ -17,4 +18,6 @@ public class JobController {
         jobSender.sendJob(workerId, payload);
         return "Job sent to worker: " + workerId;
     }
+
+
 }
