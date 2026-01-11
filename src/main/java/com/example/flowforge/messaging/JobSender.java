@@ -9,7 +9,7 @@ public class JobSender {
 
     private final RabbitTemplate rabbit;
 
-    public void sendJob(String id, Object payload) {
+    public void sendTestJob(String id, Object payload) {
         rabbit.convertAndSend(
                 RabbitConfig.JOBS_EXCHANGE,
                 "job." + id,
@@ -18,6 +18,13 @@ public class JobSender {
         System.out.println("Sent job to worker: " + id);
     }
 
-
+    public void sendJob(String id, Object payload) {
+        rabbit.convertAndSend(
+                RabbitConfig.JOBS_EXCHANGE,
+                id,
+                payload
+        );
+        System.out.println("Sent job: " + id);
+    }
 }
 
