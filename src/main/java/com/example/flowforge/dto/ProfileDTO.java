@@ -13,7 +13,7 @@ public class ProfileDTO {
     private int numberOfJobs;
     private int numberOfWorkers;
     private String targetUrl;
-    private Integer timeoutSec;
+    private Double timeoutSec;
     private Double thinkTimeAvg;
     private Double thinkTimeVar;
     private String userAgent;

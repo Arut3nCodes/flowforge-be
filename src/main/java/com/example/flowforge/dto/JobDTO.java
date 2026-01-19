@@ -10,7 +10,7 @@ import java.io.Serializable;
 @NoArgsConstructor
 @AllArgsConstructor
 @Data
-public class JobDTO implements Serializable {
+public class JobDTO{
     private int jobId;
     private String targetUrl;
     private double timeoutSec;
@@ -21,7 +21,8 @@ public class JobDTO implements Serializable {
     private String userAgent;
 
     public JobDTO(int jobId, ProfileDTO profileDTO){
-        targetUrl = profileDTO.getTargetUrl();
+        this.jobId = jobId;
+        this.targetUrl = profileDTO.getTargetUrl();
         timeoutSec = profileDTO.getTimeoutSec();
         thinkTimeAvg = profileDTO.getThinkTimeAvg();
         thinkTimeVar = profileDTO.getThinkTimeVar();
