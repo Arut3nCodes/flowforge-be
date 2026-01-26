@@ -10,7 +10,9 @@ import org.apache.commons.statistics.distribution.ParetoDistribution;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 
+import java.io.FileOutputStream;
 import java.util.ArrayList;
+import java.util.Base64;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CountDownLatch;
@@ -40,7 +42,6 @@ public class TrafficGeneratorService {
         List<JobDTO> jobs = new ArrayList<>();
         int totalDepth = 0;
 
-        // Generate jobs
         for (int i = 0; i < profileDTO.getNumberOfJobs(); i++) {
             JobDTO jobDTO = new JobDTO(i, profileDTO);
 
@@ -84,7 +85,7 @@ public class TrafficGeneratorService {
 
         try {
             System.out.println("Waiting for analysis_done from worker...");
-            boolean received = latch.await(60, TimeUnit.SECONDS); // timeout 60s
+            boolean received = latch.await(totalDepth * 3L, TimeUnit.SECONDS); // timeout 60s
             if (!received) {
                 System.out.println("Timeout waiting for analysis_done!");
                 return null;
@@ -92,6 +93,18 @@ public class TrafficGeneratorService {
         } catch (InterruptedException e) {
             e.printStackTrace();
             return null;
+        }
+
+        try {
+            byte[] decodedBytes = Base64.getDecoder().decode(resultHolder[0].getPdfB64());
+
+            FileOutputStream fos = new FileOutputStream("output.pdf");
+            fos.write(decodedBytes);
+            fos.close();
+
+            System.out.println("PDF created successfully!");
+        } catch (Exception e) {
+            e.printStackTrace();
         }
 
         return resultHolder[0];

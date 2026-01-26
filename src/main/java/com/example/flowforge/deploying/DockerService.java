@@ -7,11 +7,13 @@ import com.github.dockerjava.core.DockerClientConfig;
 import com.github.dockerjava.core.DockerClientImpl;
 import com.github.dockerjava.httpclient5.ApacheDockerHttpClient;
 import com.github.dockerjava.transport.DockerHttpClient;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CopyOnWriteArrayList;
 
 @Service
@@ -60,7 +62,8 @@ public class DockerService {
     /**
      * Zatrzymuje wszystkie kontenery
      */
-    public List<String> stopAll() {
+    @Async
+    public CompletableFuture<List<String>> stopAll() {
         for (String id : runningContainers) {
             try {
                 dockerClient.stopContainerCmd(id).exec();
@@ -70,6 +73,6 @@ public class DockerService {
 
         List<String> stopped = new ArrayList<>(runningContainers);
         runningContainers.clear();
-        return stopped;
+        return CompletableFuture.completedFuture(stopped);
     }
 }
