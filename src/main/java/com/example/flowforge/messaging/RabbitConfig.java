@@ -18,12 +18,16 @@ public class RabbitConfig {
     public static final String RESULTS_KEY = "result.*";
 
     // === READY (Python compatible) ===
-    public static final String READY_QUEUE = "perf.ready"; // <-- match Python
+    public static final String READY_QUEUE = "perf.ready";
 
     // === SUMMARY ===
     public static final String SUMMARY_EXCHANGE = "summary_exchange";
     public static final String SUMMARY_QUEUE = "summary_queue";
     public static final String SUMMARY_KEY = "analysis_start";
+
+    // === DONE (Python compatible) ===
+    public static final String DONE_QUEUE = "summary_done_queue";
+    public static final String DONE_KEY = "analysis_done";
 
     // ================== JOBS ==================
     @Bean
@@ -95,5 +99,19 @@ public class RabbitConfig {
                 .bind(summaryQueue())
                 .to(summaryExchange())
                 .with(SUMMARY_KEY);
+    }
+
+    // ================== DONE (Python compatible) ==================
+    @Bean
+    public Queue doneQueue() {
+        return QueueBuilder.durable(DONE_QUEUE).build();
+    }
+
+    @Bean
+    public Binding doneBinding(DirectExchange summaryExchange) {
+        return BindingBuilder
+                .bind(doneQueue())
+                .to(summaryExchange)
+                .with(DONE_KEY);
     }
 }

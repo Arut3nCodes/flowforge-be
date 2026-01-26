@@ -1,8 +1,10 @@
 package com.example.flowforge.service;
 
+import com.example.flowforge.dto.AnalysisDoneDto;
 import com.example.flowforge.dto.AnalysisSummaryDTO;
 import com.example.flowforge.dto.JobDTO;
 import com.example.flowforge.dto.ProfileDTO;
+import com.example.flowforge.messaging.AnalysisDoneReceiver;
 import com.example.flowforge.messaging.JobSender;
 import org.apache.commons.statistics.distribution.ParetoDistribution;
 import org.springframework.scheduling.annotation.Async;
@@ -11,6 +13,8 @@ import org.springframework.stereotype.Service;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 
 @Service
 public class TrafficGeneratorService {
@@ -31,32 +35,33 @@ public class TrafficGeneratorService {
         this.paretoDistribution = ParetoDistribution.of(1.0, 1.0);
     }
 
-    @Async
-    public CompletableFuture<Void> generateTraffic(ProfileDTO profileDTO) {
+    public AnalysisDoneDto generateTraffic(ProfileDTO profileDTO) {
         System.out.println("Setting up " + profileDTO.getNumberOfWorkers() + " workers");
         List<JobDTO> jobs = new ArrayList<>();
         int totalDepth = 0;
 
+        // Generate jobs
         for (int i = 0; i < profileDTO.getNumberOfJobs(); i++) {
             JobDTO jobDTO = new JobDTO(i, profileDTO);
 
-            // Generate integer depth
+            // Depth
             double rawDepth = paretoDistribution.inverseCumulativeProbability(Math.random());
             int scaledDepth = minDepth + (int)((rawDepth / (rawDepth + 1)) * (maxDepth - minDepth));
             jobDTO.setDepth(scaledDepth);
             totalDepth += scaledDepth;
 
-            // Generate start delay
+            // Start delay
             double rawDelay = paretoDistribution.inverseCumulativeProbability(Math.random());
             long scaledDelay = minDelay + (long)((rawDelay / (rawDelay + 1)) * (maxDelay - minDelay));
             jobDTO.setStartDelay(scaledDelay);
 
             jobDTO.setUserAgent("SomeUserAgent");
-
             jobs.add(jobDTO);
         }
 
-        // 2️⃣ Send summary message first to SUMMARY channel
+        CountDownLatch latch = new CountDownLatch(1);
+        AnalysisDoneReceiver.setLatch(latch); // listener will countDown when done
+
         try {
             AnalysisSummaryDTO summary = new AnalysisSummaryDTO("analysis_start", totalDepth);
             System.out.println("Sending summary: " + summary);
@@ -65,7 +70,6 @@ public class TrafficGeneratorService {
             e.printStackTrace();
         }
 
-        // 3️⃣ Send individual jobs to JOBS channel
         for (JobDTO jobDTO : jobs) {
             try {
                 System.out.println("Sending job: " + jobDTO);
@@ -75,6 +79,21 @@ public class TrafficGeneratorService {
             }
         }
 
-        return CompletableFuture.completedFuture(null);
+        AnalysisDoneDto[] resultHolder = new AnalysisDoneDto[1]; // store result from listener
+        AnalysisDoneReceiver.setResultHolder(resultHolder);
+
+        try {
+            System.out.println("Waiting for analysis_done from worker...");
+            boolean received = latch.await(60, TimeUnit.SECONDS); // timeout 60s
+            if (!received) {
+                System.out.println("Timeout waiting for analysis_done!");
+                return null;
+            }
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+            return null;
+        }
+
+        return resultHolder[0];
     }
 }

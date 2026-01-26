@@ -29,7 +29,6 @@ public class JobSender {
         System.out.println("Sent job: " + id);
     }
 
-    // ✅ New method to send summary to SUMMARY_EXCHANGE
     public void sendSummary(String routingKey, AnalysisSummaryDTO summary) {
         rabbit.convertAndSend(
                 RabbitConfig.SUMMARY_EXCHANGE,
